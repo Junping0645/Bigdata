@@ -1,20 +1,13 @@
 import { useEffect, useState } from "react";
 import { User } from "firebase/auth";
-import {
-  collection,
-  query,
-  orderBy,
-  limit,
-  onSnapshot,
-  Timestamp,
-} from "firebase/firestore";
+import { ref, onValue, off } from "firebase/database";
 import { db } from "../firebase";
 
 interface HistoryItem {
   id: string;
   question: string;
   answer: string;
-  createdAt: Timestamp | null;
+  createdAt: number | null;
 }
 
 interface Props {
@@ -25,20 +18,21 @@ export default function History({ user }: Props) {
   const [items, setItems] = useState<HistoryItem[]>([]);
 
   useEffect(() => {
-    const q = query(
-      collection(db, "users", user.uid, "history"),
-      orderBy("createdAt", "desc"),
-      limit(20)
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      setItems(
-        snap.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as Omit<HistoryItem, "id">),
-        }))
-      );
+    const histRef = ref(db, `users/${user.uid}/history`);
+    onValue(histRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list: HistoryItem[] = Object.entries(data).map(([id, val]) => ({
+          id,
+          ...(val as Omit<HistoryItem, "id">),
+        }));
+        list.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+        setItems(list);
+      } else {
+        setItems([]);
+      }
     });
-    return unsub;
+    return () => off(histRef);
   }, [user.uid]);
 
   if (items.length === 0) {
@@ -54,7 +48,7 @@ export default function History({ user }: Props) {
           <p style={styles.a}>{item.answer}</p>
           {item.createdAt && (
             <p style={styles.date}>
-              {item.createdAt.toDate().toLocaleString("ko-KR")}
+              {new Date(item.createdAt).toLocaleString("ko-KR")}
             </p>
           )}
         </div>

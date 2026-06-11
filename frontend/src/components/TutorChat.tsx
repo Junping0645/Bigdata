@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { User } from "firebase/auth";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { ref, push, serverTimestamp } from "firebase/database";
 import { db } from "../firebase";
 import { askChat, fetchTTS } from "../api";
 
@@ -33,6 +33,7 @@ export default function TutorChat({ user }: Props) {
   const [ttsLoading, setTtsLoading] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [dbError, setDbError] = useState("");
   const [voice, setVoice] = useState("coral");
   const [tone, setTone] = useState(TONES[0].value);
 
@@ -48,6 +49,7 @@ export default function TutorChat({ user }: Props) {
     const q = question.trim();
     if (!q) return;
     setError("");
+    setDbError("");
     setAnswer("");
     setAudioUrl(null);
     setLoading(true);
@@ -56,14 +58,15 @@ export default function TutorChat({ user }: Props) {
       setAnswer(ans);
       if (user) {
         try {
-          await addDoc(collection(db, "users", user.uid, "history"), {
+          await push(ref(db, `users/${user.uid}/history`), {
             question: q,
             answer: ans,
             createdAt: serverTimestamp(),
           });
         } catch (dbErr: unknown) {
-          // DB 저장 실패해도 화면은 유지, 콘솔에만 기록
-          console.error("Firestore 저장 실패:", dbErr);
+          const msg = dbErr instanceof Error ? dbErr.message : String(dbErr);
+          console.error("DB 저장 실패:", msg);
+          setDbError("DB 저장 실패: " + msg);
         }
       }
     } catch (e: unknown) {
@@ -113,7 +116,8 @@ export default function TutorChat({ user }: Props) {
         )}
       </div>
 
-      {error && <p style={styles.error}>{error}</p>}
+      {error   && <p style={styles.error}>{error}</p>}
+      {dbError && <p style={styles.error}>⚠ 기록 저장 실패: {dbError}</p>}
 
       {answer && (
         <div style={styles.answerBox}>
