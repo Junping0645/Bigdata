@@ -12,7 +12,7 @@ client = OpenAI()  # OPENAI_API_KEY 환경변수 자동 사용
 app = FastAPI()
 
 # FRONTEND_URL 환경변수로 Vercel 도메인 관리 (배포 후 .env에 추가)
-_origins = ["http://localhost:5173"]
+_origins = ["https://bigdata-six.vercel.app"]
 if os.getenv("FRONTEND_URL"):
     _origins.append(os.getenv("FRONTEND_URL"))
 
