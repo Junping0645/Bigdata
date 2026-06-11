@@ -11,12 +11,14 @@ from openai import OpenAI
 client = OpenAI()  # OPENAI_API_KEY 환경변수 자동 사용
 app = FastAPI()
 
+# FRONTEND_URL 환경변수로 Vercel 도메인 관리 (배포 후 .env에 추가)
+_origins = ["http://localhost:5173"]
+if os.getenv("FRONTEND_URL"):
+    _origins.append(os.getenv("FRONTEND_URL"))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://ai-science-tutor.vercel.app",  # 배포 후 실제 Vercel 도메인으로 교체
-    ],
+    allow_origins=_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

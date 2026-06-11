@@ -55,11 +55,16 @@ export default function TutorChat({ user }: Props) {
       const ans = await askChat(q);
       setAnswer(ans);
       if (user) {
-        await addDoc(collection(db, "users", user.uid, "history"), {
-          question: q,
-          answer: ans,
-          createdAt: serverTimestamp(),
-        });
+        try {
+          await addDoc(collection(db, "users", user.uid, "history"), {
+            question: q,
+            answer: ans,
+            createdAt: serverTimestamp(),
+          });
+        } catch (dbErr: unknown) {
+          // DB 저장 실패해도 화면은 유지, 콘솔에만 기록
+          console.error("Firestore 저장 실패:", dbErr);
+        }
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "오류가 발생했습니다.");
