@@ -2,13 +2,22 @@ import { useState } from "react";
 import { useAuth } from "./hooks/useAuth";
 import Login from "./components/Login";
 import TutorChat from "./components/TutorChat";
-import History from "./components/History";
+import TodayKnowledge from "./components/TodayKnowledge";
+import MyPage from "./components/MyPage";
+import Footer from "./components/Footer";
 
-type Tab = "chat" | "history";
+type Tab = "home" | "mypage";
 
 export default function App() {
   const { user, loading } = useAuth();
-  const [tab, setTab] = useState<Tab>("chat");
+  const [tab, setTab] = useState<Tab>("home");
+  const [pendingQuestion, setPendingQuestion] = useState("");
+
+  function handleAsk(q: string) {
+    setPendingQuestion(q);
+    setTab("home");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   if (loading) {
     return <div style={styles.loading}>로딩 중…</div>;
@@ -21,6 +30,7 @@ export default function App() {
           <span style={styles.logo}>🔬 AI 과학 튜터</span>
         </header>
         <Login user={user} />
+        <Footer />
       </div>
     );
   }
@@ -31,24 +41,37 @@ export default function App() {
         <span style={styles.logo}>🔬 AI 과학 튜터</span>
         <nav style={styles.nav}>
           <button
-            style={{ ...styles.navBtn, ...(tab === "chat" ? styles.navActive : {}) }}
-            onClick={() => setTab("chat")}
+            style={{ ...styles.navBtn, ...(tab === "home" ? styles.navActive : {}) }}
+            onClick={() => setTab("home")}
           >
-            질문하기
+            홈
           </button>
           <button
-            style={{ ...styles.navBtn, ...(tab === "history" ? styles.navActive : {}) }}
-            onClick={() => setTab("history")}
+            style={{ ...styles.navBtn, ...(tab === "mypage" ? styles.navActive : {}) }}
+            onClick={() => setTab("mypage")}
           >
-            학습 기록
+            마이페이지
           </button>
         </nav>
         <Login user={user} />
       </header>
 
       <main style={styles.main}>
-        {tab === "chat" ? <TutorChat user={user} /> : <History user={user} />}
+        {tab === "home" ? (
+          <>
+            <TutorChat
+              user={user}
+              initialQuestion={pendingQuestion}
+              onQuestionConsumed={() => setPendingQuestion("")}
+            />
+            <TodayKnowledge onAsk={handleAsk} />
+          </>
+        ) : (
+          <MyPage user={user} />
+        )}
       </main>
+
+      <Footer />
     </div>
   );
 }
@@ -72,6 +95,9 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#1e1e2e",
     borderBottom: "1px solid #313244",
     flexWrap: "wrap",
+    position: "sticky",
+    top: 0,
+    zIndex: 100,
   },
   logo: { fontSize: 20, fontWeight: 800, color: "#89b4fa" },
   nav: { display: "flex", gap: 4, flex: 1 },

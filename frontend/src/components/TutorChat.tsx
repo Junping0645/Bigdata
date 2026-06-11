@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User } from "firebase/auth";
 import { ref, push, serverTimestamp } from "firebase/database";
 import { db } from "../firebase";
@@ -6,6 +6,8 @@ import { askChat, fetchTTS } from "../api";
 
 interface Props {
   user: User | null;
+  initialQuestion?: string;
+  onQuestionConsumed?: () => void;
 }
 
 const VOICES = [
@@ -26,7 +28,7 @@ const TONES = [
   { value: "친근한 친구처럼 자연스럽게 읽어줘.", label: "친근하게" },
 ];
 
-export default function TutorChat({ user }: Props) {
+export default function TutorChat({ user, initialQuestion, onQuestionConsumed }: Props) {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,6 +38,17 @@ export default function TutorChat({ user }: Props) {
   const [dbError, setDbError] = useState("");
   const [voice, setVoice] = useState("coral");
   const [tone, setTone] = useState(TONES[0].value);
+
+  useEffect(() => {
+    if (initialQuestion) {
+      setQuestion(initialQuestion);
+      setAnswer("");
+      setAudioUrl(null);
+      onQuestionConsumed?.();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuestion]);
 
   function handleNewQuestion() {
     if (audioUrl) URL.revokeObjectURL(audioUrl);
